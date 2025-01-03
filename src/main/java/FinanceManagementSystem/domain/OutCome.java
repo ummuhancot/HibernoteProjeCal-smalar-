@@ -4,6 +4,7 @@ import javax.persistence.*;
 import java.time.LocalDate;
 @Entity
 public class OutCome {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,6 +17,8 @@ public class OutCome {
     @Column(nullable = false)
     private LocalDate outcomeDate;
 
+    @ManyToOne
+    private User user;
 
     public OutCome() {
     }
@@ -62,6 +65,14 @@ public class OutCome {
         return id;
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     @Override
     public String toString() {
         return "OutCome{" +
@@ -70,6 +81,7 @@ public class OutCome {
                 ", description='" + description + '\'' +
                 ", category='" + category + '\'' +
                 ", outcomeDate=" + outcomeDate +
+                ", user=" + user +
                 '}';
     }
 }

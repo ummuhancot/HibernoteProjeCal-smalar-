@@ -17,6 +17,9 @@ public class InCame {
    @Column(nullable = false)
     private LocalDate creatDate;
 
+   @ManyToOne
+    private User user;
+
     public InCame() {
     }
 
@@ -54,6 +57,14 @@ public class InCame {
         return id;
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     @Override
     public String toString() {
         return "InCame{" +
@@ -61,6 +72,7 @@ public class InCame {
                 ", id=" + id +
                 ", description='" + description + '\'' +
                 ", creatDate=" + creatDate +
+                ", user=" + user +
                 '}';
     }
 }

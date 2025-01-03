@@ -1,0 +1,277 @@
+Kişisel Finans Yönetim Sistemi
+Açıklama: Kullanıcıların gelir ve giderlerini kaydedip aylık raporlar oluşturabileceği bir sistem.
+
+Adımlar:
+
+Tablolar:
+Kullanıcılar: Kullanıcı bilgileri.
+Gelirler: Gelir adı, miktar, tarih.
+Giderler: Gider adı, miktar, tarih, kategori.
+Entity İlişkileri:
+Kullanıcı ve gelir/giderler arasında @OneToMany ilişkisi.
+Özellikler:
+Gelir ve gider ekleme.
+Aylık gelir/gider raporu oluşturma.
+Gider kategorilerini gruplayarak harcama analizi.
+Bonus: Harcama bütçesi belirleme ve uyarı sistemi ekleyin.
+
+### **Kişisel Finans Yönetim Sistemi Yol Haritası**
+
+Bu proje, kullanıcıların finansal durumlarını takip etmelerine ve analiz etmelerine yardımcı olmayı hedefler. Kullanıcılar gelirlerini ve giderlerini kaydedebilir, aylık raporlar oluşturabilir ve harcamalarını kategorilere göre analiz edebilir.
+
+---
+
+### **1. Gerekli Bağımlılıklar ve Proje Kurulumu**
+
+**Teknolojiler:**
+
+- Hibernate: Veritabanı işlemleri için.
+- MySQL: Veritabanı yönetimi için.
+- JavaFX (opsiyonel): Kullanıcı arayüzü geliştirmek için.
+- Maven: Bağımlılık yönetimi.
+
+**Maven Bağımlılıkları:** Hibernate ve MySQL bağlayıcıları ekleyin:
+
+```xml
+xml
+Kodu kopyala
+<dependency>
+    <groupId>org.hibernate</groupId>
+    <artifactId>hibernate-core</artifactId>
+    <version>5.6.14.Final</version>
+</dependency>
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.30</version>
+</dependency>
+
+```
+
+---
+
+### **2. Veritabanı Tasarımı**
+
+Projede 3 temel tablo olacak:
+
+1. **Kullanıcılar Tablosu**
+
+    Kullanıcı bilgilerini içerir:
+
+    - ID
+    - İsim
+    - E-posta
+2. **Gelirler Tablosu**
+
+    Gelir detaylarını içerir:
+
+    - ID
+    - Gelir Adı
+    - Miktar
+    - Tarih
+    - Kullanıcı ID
+3. **Giderler Tablosu**
+
+    Gider detaylarını içerir:
+
+    - ID
+    - Gider Adı
+    - Miktar
+    - Tarih
+    - Kategori
+    - Kullanıcı ID
+
+---
+
+### **3. Entity Sınıflarını Oluşturma**
+
+1. **Kullanıcı Entity**:
+
+    ```java
+    java
+    Kodu kopyala
+    @Entity
+    @Table(name = "kullanicilar")
+    public class Kullanici {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+        private String isim;
+        private String email;
+
+        @OneToMany(mappedBy = "kullanici", cascade = CascadeType.ALL)
+        private List<Gelir> gelirler;
+
+        @OneToMany(mappedBy = "kullanici", cascade = CascadeType.ALL)
+        private List<Gider> giderler;
+
+        // Getter ve Setter'lar
+    }
+
+    ```
+
+2. **Gelir Entity**:
+
+    ```java
+    java
+    Kodu kopyala
+    @Entity
+    @Table(name = "gelirler")
+    public class Gelir {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+        private String ad;
+        private Double miktar;
+        private LocalDate tarih;
+
+        @ManyToOne
+        @JoinColumn(name = "kullanici_id")
+        private Kullanici kullanici;
+
+        // Getter ve Setter'lar
+    }
+
+    ```
+
+3. **Gider Entity**:
+
+    ```java
+    java
+    Kodu kopyala
+    @Entity
+    @Table(name = "giderler")
+    public class Gider {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+        private String ad;
+        private Double miktar;
+        private LocalDate tarih;
+        private String kategori;
+
+        @ManyToOne
+        @JoinColumn(name = "kullanici_id")
+        private Kullanici kullanici;
+
+        // Getter ve Setter'lar
+    }
+
+    ```
+
+
+---
+
+### **4. CRUD İşlemleri ve Fonksiyonlar**
+
+### **Gelir/Gider Ekleme**
+
+```java
+java
+Kodu kopyala
+public void gelirEkle(Gelir gelir) {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    Transaction transaction = session.beginTransaction();
+    session.save(gelir);
+    transaction.commit();
+    session.close();
+}
+
+public void giderEkle(Gider gider) {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    Transaction transaction = session.beginTransaction();
+    session.save(gider);
+    transaction.commit();
+    session.close();
+}
+
+```
+
+---
+
+### **Aylık Gelir ve Gider Raporu**
+
+```java
+java
+Kodu kopyala
+public List<Gelir> aylikGelirler(Long kullaniciId, int ay, int yil) {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    String hql = "FROM Gelir g WHERE g.kullanici.id = :kullaniciId AND MONTH(g.tarih) = :ay AND YEAR(g.tarih) = :yil";
+    Query<Gelir> query = session.createQuery(hql, Gelir.class);
+    query.setParameter("kullaniciId", kullaniciId);
+    query.setParameter("ay", ay);
+    query.setParameter("yil", yil);
+    return query.getResultList();
+}
+
+public List<Gider> aylikGiderler(Long kullaniciId, int ay, int yil) {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    String hql = "FROM Gider g WHERE g.kullanici.id = :kullaniciId AND MONTH(g.tarih) = :ay AND YEAR(g.tarih) = :yil";
+    Query<Gider> query = session.createQuery(hql, Gider.class);
+    query.setParameter("kullaniciId", kullaniciId);
+    query.setParameter("ay", ay);
+    query.setParameter("yil", yil);
+    return query.getResultList();
+}
+
+```
+
+---
+
+### **Harcama Kategorilerini Gruplama**
+
+```java
+java
+Kodu kopyala
+public Map<String, Double> kategoriBazliGiderAnalizi(Long kullaniciId, int ay, int yil) {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    String hql = "SELECT g.kategori, SUM(g.miktar) FROM Gider g WHERE g.kullanici.id = :kullaniciId AND MONTH(g.tarih) = :ay AND YEAR(g.tarih) = :yil GROUP BY g.kategori";
+    Query<Object[]> query = session.createQuery(hql, Object[].class);
+    query.setParameter("kullaniciId", kullaniciId);
+    query.setParameter("ay", ay);
+    query.setParameter("yil", yil);
+
+    Map<String, Double> kategoriAnalizi = new HashMap<>();
+    for (Object[] row : query.getResultList()) {
+        kategoriAnalizi.put((String) row[0], (Double) row[1]);
+    }
+    return kategoriAnalizi;
+}
+
+```
+
+---
+
+### **Harcama Bütçesi ve Uyarı Sistemi**
+
+Bütçeyi kontrol eden ve uyarı döndüren bir yöntem:
+
+```java
+java
+Kodu kopyala
+public String harcamaUyarisi(Long kullaniciId, double aylikButce, int ay, int yil) {
+    List<Gider> giderler = aylikGiderler(kullaniciId, ay, yil);
+    double toplamHarcama = giderler.stream().mapToDouble(Gider::getMiktar).sum();
+
+    if (toplamHarcama > aylikButce) {
+        return "Dikkat! Aylık bütçenizi aştınız. Harcama toplamı: " + toplamHarcama;
+    }
+    return "Harcamalar bütçe dahilinde. Harcama toplamı: " + toplamHarcama;
+}
+
+```
+
+---
+
+### **5. Kullanıcı Arayüzü (Opsiyonel)**
+
+- CLI (Komut Satırı) veya JavaFX ile gelir/gider ekleme ve raporlama arayüzü oluşturabilirsiniz.
+- Harcama kategorilerini grafiklerle analiz etmek için JavaFX veya Swing kullanılabilir.
+
+---
+
+### **Bonus Özellikler**
+
+1. **Gelir ve Gider Dışa Aktarımı**: Gelir ve giderleri CSV veya JSON formatında dışa aktarabilirsiniz.
+2. **Aylık Otomatik Hatırlatmalar**: Gelir ve gider eklenmediği durumlarda kullanıcılara bildirim gönderme (CLI için konsol mesajı, GUI için popup mesaj).
+3. **Makine Öğrenimi Destekli Harcama Tahmini**: Geçmiş verilere göre gelecek ay harcamalarını tahmin eden bir sistem geliştirebilirsiniz.
